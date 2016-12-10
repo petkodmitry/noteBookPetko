@@ -51,7 +51,7 @@ public class EmailDao extends BaseDao<EmailsEntity> implements IEmailDao {
         List<EmailsEntity> result;
         try {
             session = sessionFactory.getCurrentSession();
-            Criteria criteria = session.createCriteria(getPersistentClass().getClass());
+            Criteria criteria = session.createCriteria(getPersistentClass());
             if (sortBy != null && orderType != null) {
                 criteria = orderType.equals("asc") ? criteria.addOrder(Order.asc(sortBy).ignoreCase())
                         : criteria.addOrder(Order.desc(sortBy).ignoreCase());

@@ -42,7 +42,7 @@ public class UsersEntity extends BaseEntity {
         this.password = password;
     }
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user")
     public Set<EmailsEntity> getEmailsEntitySet() {
         return emailsEntitySet;
     }
@@ -77,11 +77,7 @@ public class UsersEntity extends BaseEntity {
 
     @Override
     public String toString() {
-        String allEmails = "";
-        for (EmailsEntity meet : emailsEntitySet) {
-            allEmails = allEmails.concat(meet + ", ");
-        }
-        return String.format("User [userId=%d, login=%s, password=%s, emails=%s]",
-                userId, login, password, allEmails);
+        return String.format("User [userId=%d, login=%s, password=%s]",
+                userId, login, password);
     }
 }

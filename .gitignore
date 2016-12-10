@@ -12,3 +12,5 @@ out
 /build
 /target/
 *.xlsx
+*.docx
+*.zip

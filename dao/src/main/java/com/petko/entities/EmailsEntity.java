@@ -46,7 +46,7 @@ public class EmailsEntity extends BaseEntity {
 
     @ManyToOne
     @Cascade(org.hibernate.annotations.CascadeType.SAVE_UPDATE)
-    @JoinColumn(name = "user_id", referencedColumnName = "u_id")
+    @JoinColumn(name = "user_id")
     public UsersEntity getUser() {
         return user;
     }
@@ -80,7 +80,7 @@ public class EmailsEntity extends BaseEntity {
 
     @Override
     public String toString() {
-        return String.format("Email [emailId=%d, name=%s, email=%s" + /*", user=%s"*/"]",
-                emailId, name, email/*, user*/);
+        return String.format("Email [emailId=%d, name=%s, email=%s]",
+                emailId, name, email);
     }
 }
