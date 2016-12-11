@@ -25,7 +25,6 @@
     </c:otherwise>
 </c:choose>
 
-<%--<form method="post" action="controller?cmd=showUsers&page=${page}">--%>
 <form method="post" action="main?page=${page}">
     <table>
         <tr>
@@ -71,16 +70,7 @@
     </tr>
     <%--Filtering row of the table--%>
     <tr>
-        <%--<td>
-            <form style="height: 5px" method="POST" action="controller">
-                <input style="width: 50px" type="text" title="установить фильтр" name="userIdFilter"
-                       value="${filters.get("userId")}"/>
-                <input type="submit" formaction="controller?cmd=showUsers&page=1" hidden="hidden"/>
-                <a href="controller?cmd=showUsers&page=${filters.get("userId") == null ? page : 1}&filterRemove=userId">X</a>
-            </form>
-        </td>--%>
         <td>
-            <%--<form style="height: 5px" method="POST" action="main?filterSet=emailId">--%>
             <form style="height: 5px" method="POST" action="">
                 <input style="width: 50px" type="text" title="установить фильтр" name="filterText"
                        value="${filters.get("emailId")}"/>
@@ -117,7 +107,6 @@
             </td>
             <td><a href="javascript:void(0)"
                    onclick="confirm('Написать письмо?') ? window.location = 'send?id='+${email.getEmailId()} : ''">Написать</a>
-                   <%--onclick="confirm('Отправить?') ? openDialog() : ''">Отправить</a>--%>
             </td>
         </tr>
     </c:forEach>

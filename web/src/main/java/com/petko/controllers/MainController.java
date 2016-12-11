@@ -2,7 +2,6 @@ package com.petko.controllers;
 
 import com.petko.entities.EmailsEntity;
 import com.petko.services.EmailService;
-import com.petko.services.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -10,31 +9,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpSession;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 
 @Controller
 public class MainController {
-//    private final String errorMessageAttribute = "errorMessage";
-//    private final String infoMessageAttribute = "info";
-    //    private final String forwardPageAttribute = Constants.FORWARD_PAGE_ATTRIBUTE;
-//    private ModelMap modelMap = new ModelMap();
-
-    @Autowired
-    private IUserService userService;
     @Autowired
     private EmailService emailService;
-
-    /*@RequestMapping(value = "/main", method = {RequestMethod.POST, RequestMethod.GET})
-    public String login(ModelMap modelMap){
-        List<EmailsEntity> emailsList;
-        emailsList = emailService.getAll(modelMap);
-        modelMap.addAttribute("emailsList", emailsList);
-        return "main";
-    }*/
 
     @RequestMapping(value = "/main", method = {RequestMethod.POST, RequestMethod.GET})
     public String main(ModelMap modelMap, HttpSession session, String perPage,
@@ -65,7 +46,7 @@ public class MainController {
     }
 
     @RequestMapping(value = "/add", method = RequestMethod.GET)
-    public String showAddPage(/*ModelMap modelMap*/){
+    public String showAddPage(){
         return "addEmail";
     }
 
@@ -75,24 +56,6 @@ public class MainController {
             return "addEmail";
         }
         emailService.addEmail(modelMap, name, email);
-
-//        EmailsEntity entity = new EmailsEntity();
-//        entity.setEmail(email);
-//        entity.setName(name);
-//        if ("".equals(name) || "".equals(email)) {
-//            modelMap.addAttribute(errorMessageAttribute, "Поля не могут быть пустыми");
-//            modelMap.addAttribute("regData", entity);
-//            return "addEmail";
-//        }
-//        if (isEmailOK(email)) {
-//            emailService.add(entity);
-//            modelMap.addAttribute(infoMessageAttribute, "Контакт успешно добавлен.");
-//        }
-//        else {
-//            modelMap.addAttribute(errorMessageAttribute, "E-mail не удовлетворяет условиям.");
-//            modelMap.addAttribute("regData", entity);
-//        }
-
         return "addEmail";
     }
 
@@ -102,24 +65,16 @@ public class MainController {
         return main(modelMap, session, null, null, null, null, null, null, null);
     }
 
-    /*@RequestMapping(value = "/send", method = RequestMethod.GET)
-    public String sendEmail(ModelMap modelMap, HttpSession session, String id){
-        emailService.sendMail(modelMap, id, "Petko project and CV", "This message was sent from the test email");
-        return main(modelMap, session, null, null, null, null, null, null, null);
-    }*/
-
     @RequestMapping(value = "/send", method = RequestMethod.GET)
-    public String sendToEmail(ModelMap modelMap, /*HttpSession session,*/ String id){
-        /*emailService.sendMail2(modelMap, id);
-        return main(modelMap, session, null, null, null, null, null, null, null);*/
-        emailService.sendMail2(modelMap, id);
+    public String sendToEmail(ModelMap modelMap, String id){
+        emailService.getEmailOfReceiver(modelMap, id);
         return "sendMessage";
     }
 
     @RequestMapping(value = "/sendMessage", method = RequestMethod.POST)
-    public String sendMessage(ModelMap modelMap, HttpSession session, String sendTo, String theme, String body,
+    public String sendMessage(ModelMap modelMap, HttpSession session, String sendTo, String subject, String body,
                               @RequestParam(value = "upload", required = false) MultipartFile[] upload){
-        emailService.sendMail(modelMap, sendTo, theme, body, upload);
+        emailService.sendMail(modelMap, sendTo, subject, body, upload);
         return main(modelMap, session, null, null, null, null, null, null, null);
     }
 }

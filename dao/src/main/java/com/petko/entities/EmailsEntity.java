@@ -1,7 +1,5 @@
 package com.petko.entities;
 
-import org.hibernate.annotations.*;
-
 import javax.persistence.*;
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -12,7 +10,6 @@ public class EmailsEntity extends BaseEntity {
     private int emailId;
     private String name;
     private String email;
-    private UsersEntity user;
 
     @Id
     @Column(name = "m_id", nullable = false, unique = true)
@@ -44,17 +41,6 @@ public class EmailsEntity extends BaseEntity {
         this.email = email;
     }
 
-    @ManyToOne
-    @Cascade(org.hibernate.annotations.CascadeType.SAVE_UPDATE)
-    @JoinColumn(name = "user_id")
-    public UsersEntity getUser() {
-        return user;
-    }
-
-    public void setUser(UsersEntity user) {
-        this.user = user;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -64,9 +50,7 @@ public class EmailsEntity extends BaseEntity {
 
         if (getEmailId() != that.getEmailId()) return false;
         if (getName() != null ? !getName().equals(that.getName()) : that.getName() != null) return false;
-        if (getEmail() != null ? !getEmail().equals(that.getEmail()) : that.getEmail() != null) return false;
-        return getUser() != null ? getUser().equals(that.getUser()) : that.getUser() == null;
-
+        return  (getEmail() != null ? !getEmail().equals(that.getEmail()) : that.getEmail() != null);
     }
 
     @Override
@@ -74,7 +58,6 @@ public class EmailsEntity extends BaseEntity {
         int result = getEmailId();
         result = 31 * result + (getName() != null ? getName().hashCode() : 0);
         result = 31 * result + (getEmail() != null ? getEmail().hashCode() : 0);
-        result = 31 * result + (getUser() != null ? getUser().hashCode() : 0);
         return result;
     }
 

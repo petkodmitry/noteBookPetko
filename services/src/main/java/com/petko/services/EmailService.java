@@ -6,8 +6,6 @@ import com.petko.dao.IEmailDao;
 import com.petko.entities.EmailsEntity;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.InputStreamSource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -15,28 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.jnlp.FileContents;
-import javax.jnlp.FileOpenService;
-import javax.jnlp.ServiceManager;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpSession;
-import javax.swing.*;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.html.HTMLEditorKit;
-import java.awt.*;
 import java.io.*;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 @Service
 public class EmailService implements IEmailService {
@@ -56,6 +39,7 @@ public class EmailService implements IEmailService {
      * @param modelMap - Map of current http model
      * @return List of all Users
      */
+    @Override
     @Transactional(readOnly = true, rollbackFor = DaoException.class)
     public List<EmailsEntity> getAll(ModelMap modelMap, HttpSession session) {
         List<EmailsEntity> result;
@@ -148,6 +132,13 @@ public class EmailService implements IEmailService {
         return result;
     }
 
+    /**
+     * adds a new contact into our notebook
+     * @param modelMap - Map of current http model
+     * @param name - name of the Contact
+     * @param email - email of the Contact
+     */
+    @Override
     @Transactional(readOnly = false, rollbackFor = DaoException.class)
     public void addEmail(ModelMap modelMap, String name, String email) {
         EmailsEntity entity = new EmailsEntity();
@@ -158,7 +149,6 @@ public class EmailService implements IEmailService {
             modelMap.addAttribute("regData", entity);
         }
         if (isEmailOK(email)) {
-//            add(entity);
             try {
                 baseDao.save(entity);
                 modelMap.addAttribute(infoMessageAttribute, "Контакт успешно добавлен.");
@@ -174,6 +164,12 @@ public class EmailService implements IEmailService {
         return email.matches("[a-zA-Z0-9.%+-_]+@[a-zA-Z0-9.%+-]+\\.[a-zA-Z]{2,}");
     }
 
+    /**
+     * deletes the contact from our notebook
+     * @param modelMap - Map of current http model
+     * @param idString - the ID of the contact, String version
+     */
+    @Override
     @Transactional(readOnly = false, rollbackFor = DaoException.class)
     public void deleteEmail(ModelMap modelMap, String idString) {
         try {
@@ -190,84 +186,54 @@ public class EmailService implements IEmailService {
         } catch (DaoException e){/*NOP*/}
     }
 
-//    @Override
-    @Transactional(readOnly = false, rollbackFor = {IOException.class, MessagingException.class, NumberFormatException.class})
-    public void sendMail(ModelMap modelMap, String idString, String subject,
+    /**
+     * getting the email of the contact by its ID
+     * @param modelMap - Map of current http model
+     * @param idString - the ID of the contact, String version
+     */
+    @Override
+    @Transactional(readOnly = false, rollbackFor = {DaoException.class, NumberFormatException.class})
+    public void getEmailOfReceiver(ModelMap modelMap, String idString) {
+        try {
+            int id = Integer.parseInt(idString);
+            EmailsEntity entity = emailDao.getById(id);
+            modelMap.put("email", entity.getEmail());
+        } catch (NumberFormatException | DaoException e) {/*NOP*/}
+    }
+
+    /**
+     *
+     * @param modelMap - Map of current http model
+     * @param sendTo - the ID of the contact, String version
+     * @param subject of the mail
+     * @param body of the mail
+     * @param uploadedFiles - files to be put into the email
+     */
+    @Override
+    public void sendMail(ModelMap modelMap, String sendTo, String subject,
                          String body, MultipartFile[] uploadedFiles) {
         try {
-//            int id = Integer.parseInt(idString);
-//            EmailsEntity entity = emailDao.getById(id);
-//            String to = entity.getEmail();
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-//            Path projectZip = createProjectZipFile();
-//            ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream());
-//            ZipInputStream zis = new ZipInputStream(Files.newInputStream());
-
-//            helper.setTo(to);
-            helper.setTo(idString);
+            helper.setTo(sendTo);
             helper.setSubject(subject);
             helper.setText(body);
-
-//            FileOpenService openService = (FileOpenService) ServiceManager.lookup("javax.jnlp.FileOpenService");
-//            String[] params = {"txt", "all"};
-//            FileContents contents = openService.openFileDialog("D:/", params);
-
-//            FileDialog dialog=new FileDialog(new Frame(),"Open file", FileDialog.LOAD);
-//            dialog.setVisible(true);
-//            contents.getInputStream();
-//            InputStreamSource source = new InputStreamResource(contents.getInputStream());
-
             for (MultipartFile file : uploadedFiles) {
-//                InputStreamResource source = new InputStreamResource(file.getInputStream());
-//                File source = new BufferedInputStream(new ByteArrayInputStream(file.getBytes()));
                 File tempFile = Files.createTempFile(null, null).toFile();
                 FileOutputStream fos = new FileOutputStream(tempFile);
                 fos.write(file.getBytes());
                 fos.close();
                 String fileName = file.getOriginalFilename();
                 helper.addAttachment(fileName, tempFile);
-
             }
-
             mailSender.send(message);
-            modelMap.addAttribute(infoMessageAttribute, "Письмо успешно отправлено на почту " + idString + " .");
+            modelMap.addAttribute(infoMessageAttribute, "Письмо успешно отправлено на почту " + sendTo + " .");
         } catch (IOException e) {
             modelMap.addAttribute(errorMessageAttribute, "Ошибка работы с файлом вложения.");
         } catch (MessagingException e) {
             modelMap.addAttribute(errorMessageAttribute, "Ошибка работы с объектом сообщения.");
         } catch (NumberFormatException e) {
             modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать id контакта.");
-        }
-    }
-
-    public void openDocument() {
-        FileDialog dialog=new FileDialog(new Frame(),"Open file", FileDialog.LOAD);
-        dialog.setVisible(true);
-    }
-
-    /*private Path createProjectZipFile() {
-        try {
-            String projectDir = currentDir2();
-            File fileResult = File.createTempFile("petko", "project");
-//            ZipFile zipFile = new ZipFile(fileResult);
-            Path pathResult = fileResult.toPath();
-            ZipOutputStream result = new ZipOutputStream(Files.newOutputStream(pathResult));
-            return pathResult;
-        } catch (IOException e) {
-            return null;
-        }
-    }*/
-
-    @Transactional(readOnly = false, rollbackFor = {IOException.class, MessagingException.class, NumberFormatException.class})
-    public void sendMail2(ModelMap modelMap, String idString) {
-        try {
-            int id = Integer.parseInt(idString);
-            EmailsEntity entity = emailDao.getById(id);
-            modelMap.put("email", entity.getEmail());
-        } catch (NumberFormatException | DaoException e) {
-            /*NOP*/
         }
     }
 }
