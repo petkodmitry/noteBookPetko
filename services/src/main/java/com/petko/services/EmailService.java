@@ -17,9 +17,16 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpSession;
 import java.io.*;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 public class EmailService implements IEmailService {
@@ -36,6 +43,7 @@ public class EmailService implements IEmailService {
 
     /**
      * gives List of all Users
+     *
      * @param modelMap - Map of current http model
      * @return List of all Users
      */
@@ -46,8 +54,10 @@ public class EmailService implements IEmailService {
         String page = (String) modelMap.get("page");
 
         // for sorting
-        String sortBy = (String) modelMap.get("sortBy");
-        String orderType = (String) modelMap.get("orderType");
+//        String sortBy = (String) modelMap.get("sortBy");
+//        String orderType = (String) modelMap.get("orderType");
+        String sortBy = (String) session.getAttribute("sortBy");
+        String orderType = (String) session.getAttribute("orderType");
         // for filtering
         Map<String, String> filters = (Map<String, String>) session.getAttribute("filters");
 
@@ -57,8 +67,7 @@ public class EmailService implements IEmailService {
         Integer newMax;
         if (newPerPage != null) {
             newMax = newPerPage;
-        }
-        else newMax = oldPerPage != null ? oldPerPage : 5;
+        } else newMax = oldPerPage != null ? oldPerPage : 5;
 
         try {
             int firstInt;
@@ -70,8 +79,10 @@ public class EmailService implements IEmailService {
                 Integer pageInt = Integer.parseInt(page);
                 Integer newPageInt = getPageDueToNewPerPage(modelMap, session, pageInt, newPerPage, oldPerPage);
                 if (sortBy != null && orderType != null) {
-                    modelMap.addAttribute("sortBy", sortBy);
-                    modelMap.addAttribute("orderType", orderType);
+                    session.setAttribute("sortBy", sortBy);
+                    session.setAttribute("orderType", orderType);
+//                    modelMap.addAttribute("sortBy", sortBy);
+//                    modelMap.addAttribute("orderType", orderType);
                 }
                 firstInt = (newPageInt - 1) * newMax;
             }
@@ -89,13 +100,15 @@ public class EmailService implements IEmailService {
 
     /**
      * Re-estimates current page due to perPage parameter changes
-     * @param modelMap - Map of current http model
-     * @param page - current page (not re-estimated)
+     *
+     * @param modelMap   - Map of current http model
+     * @param page       - current page (not re-estimated)
      * @param newPerPage - a new perPage parameter
      * @param oldPerPage - perPage parameter which is saved in httpSession
      * @return the correct page due to perPage changes
      */
-    private Integer getPageDueToNewPerPage(ModelMap modelMap, HttpSession session, Integer page, Integer newPerPage, Integer oldPerPage) {
+    private Integer getPageDueToNewPerPage(ModelMap modelMap, HttpSession session, Integer page,
+                                           Integer newPerPage, Integer oldPerPage) {
         Integer result;
         Integer totalToShow = (Integer) session.getAttribute("totalToShow");
         if ((newPerPage == null || oldPerPage == null) || (newPerPage.equals(oldPerPage))) {
@@ -111,10 +124,11 @@ public class EmailService implements IEmailService {
 
     /**
      * Re-estimates current page due to perPage parameter changes
-     * @param page - current page (not re-estimated)
-     * @param totalToShow - the whole amount of records (including filters)
-     * @param newPerPage - a new perPage parameter
-     * @param oldPerPage - perPage parameter which is saved in httpSession
+     *
+     * @param page          - current page (not re-estimated)
+     * @param totalToShow   - the whole amount of records (including filters)
+     * @param newPerPage    - a new perPage parameter
+     * @param oldPerPage    - perPage parameter which is saved in httpSession
      * @param isMoreRecords - is new perPage bigger than current
      * @return the correct page due to perPage changes
      */
@@ -126,7 +140,7 @@ public class EmailService implements IEmailService {
         if (isMoreRecords) {
             result = rest != 0 ? temp + 1 : temp;
         } else result = rest != 0 ? temp - 1 : temp;
-        rest =  totalToShow % newPerPage;
+        rest = totalToShow % newPerPage;
         Integer endPage = rest != 0 ? (totalToShow - rest) / newPerPage + 1 : totalToShow / newPerPage;
         if (endPage < result) result = endPage;
         return result;
@@ -134,9 +148,10 @@ public class EmailService implements IEmailService {
 
     /**
      * adds a new contact into our notebook
+     *
      * @param modelMap - Map of current http model
-     * @param name - name of the Contact
-     * @param email - email of the Contact
+     * @param name     - name of the Contact
+     * @param email    - email of the Contact
      */
     @Override
     @Transactional(readOnly = false, rollbackFor = DaoException.class)
@@ -153,8 +168,7 @@ public class EmailService implements IEmailService {
                 baseDao.save(entity);
                 modelMap.addAttribute(infoMessageAttribute, "Контакт успешно добавлен.");
             } catch (DaoException e) {/*NOP*/}
-        }
-        else {
+        } else {
             modelMap.addAttribute(errorMessageAttribute, "E-mail не удовлетворяет условиям.");
             modelMap.addAttribute("regData", entity);
         }
@@ -166,6 +180,7 @@ public class EmailService implements IEmailService {
 
     /**
      * deletes the contact from our notebook
+     *
      * @param modelMap - Map of current http model
      * @param idString - the ID of the contact, String version
      */
@@ -183,11 +198,12 @@ public class EmailService implements IEmailService {
             }
         } catch (NumberFormatException e) {
             modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать id.");
-        } catch (DaoException e){/*NOP*/}
+        } catch (DaoException e) {/*NOP*/}
     }
 
     /**
      * getting the email of the contact by its ID
+     *
      * @param modelMap - Map of current http model
      * @param idString - the ID of the contact, String version
      */
@@ -202,11 +218,10 @@ public class EmailService implements IEmailService {
     }
 
     /**
-     *
-     * @param modelMap - Map of current http model
-     * @param sendTo - the ID of the contact, String version
-     * @param subject of the mail
-     * @param body of the mail
+     * @param modelMap      - Map of current http model
+     * @param sendTo        - the ID of the contact, String version
+     * @param subject       of the mail
+     * @param body          of the mail
      * @param uploadedFiles - files to be put into the email
      */
     @Override
@@ -235,5 +250,103 @@ public class EmailService implements IEmailService {
         } catch (NumberFormatException e) {
             modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать id контакта.");
         }
+    }
+
+    //    @Override
+    @Transactional(readOnly = true, rollbackFor = {IOException.class})
+    public void sendMailNew(ModelMap modelMap, String idString) {
+        URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+        try {
+            // getting Entity to send to
+            int id = Integer.parseInt(idString);
+            EmailsEntity entity = emailDao.getById(id);
+            modelMap.put("email", entity.getEmail());
+
+            // getting the directory of our App
+            String currentRelativeDir = "web\\target\\";
+            String applicationLocation = URLDecoder.decode(location.getFile().substring(1).replace('/', File.separatorChar), Charset.defaultCharset().name());
+            applicationLocation = applicationLocation.substring(0, applicationLocation.indexOf(currentRelativeDir));
+
+            // creating resulting ZIP file
+            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(applicationLocation + "noteBook-Петько.zip"))) {
+                // filter for file which are NOT of following endings
+                String[] wildCards = {"tmp", ".classpath", ".project"/*, ".idea"*/, ".iml",
+                        ".checkstyle", "build", "target", "bin", ".settings", ".git",
+                        "out", "build", "target", ".xlsx", ".docx", ".zip"};
+                FilenameFilter nameFilter = new FilenameFilter() {
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        for (String filters : wildCards) {
+                            if (name.toLowerCase().endsWith(filters)) return false;
+                        }
+                        return true;
+//                        return !dir.getName().toLowerCase().endsWith(name);
+                    }
+                };
+
+//                File parentDir = new File(applicationAbsoluteDir);
+                String relativeDir = "";
+//                String[] fileList = parentDir.list(nameFilter);
+                /*for (String fileInDir : fileList) {
+                    try (FileInputStream fis = new FileInputStream(fileInDir)) {
+                        ZipEntry entry1 = new ZipEntry(fileInDir);
+                        zout.putNextEntry(entry1);
+                        byte[] buffer = new byte[fis.available()];
+                        fis.read(buffer);
+                        zout.write(buffer);
+                        zout.closeEntry();
+                    }
+                }*/
+                Map<String, ByteArrayOutputStream> allFilesByFilter =
+                        createZipFile(applicationLocation, nameFilter, applicationLocation);
+//                Map<String, ByteArrayOutputStream> allFilesByFilter = createZipFile(parentDir, fileList, currentAbsoluteDir);
+                for (Map.Entry<String, ByteArrayOutputStream> entry : allFilesByFilter.entrySet()) {
+                    zout.putNextEntry(new ZipEntry(entry.getKey()));
+                    ByteArrayOutputStream value = entry.getValue();
+                    if (value != null) {
+                        zout.write(value.toByteArray());
+                    }
+                    zout.closeEntry();
+                }
+            }
+        } catch (NumberFormatException e) {
+            modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать id контакта.");
+        } catch (UnsupportedEncodingException e) {
+            modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать директорию с проектом.");
+        } catch (DaoException e) {/*NOP*/}
+        catch (IOException e) {
+            modelMap.addAttribute(errorMessageAttribute, "Ошибка в чтении файла(ов).");
+        }
+    }
+
+    private Map<String, ByteArrayOutputStream> createZipFile(String applicationAbsoluteDir,
+                                                             FilenameFilter nameFilter,
+                                                             String currentAbsoluteDir) throws IOException{
+        Map<String, ByteArrayOutputStream> result = new HashMap<>();
+
+        File parentDir = new File(currentAbsoluteDir);
+
+        String[] fileList = parentDir.list(nameFilter);
+
+        for (String fileInDir : fileList) {
+//            fileInDir = currentAbsoluteDir + "\\" + fileInDir;
+//            Path path = Paths.get(fileInDir);
+            String newAbsoluteDir = currentAbsoluteDir + "\\" + fileInDir;
+            Path path = Paths.get(newAbsoluteDir);
+//            if (Files.isDirectory(path)) result.put(fileInDir, null);
+            if (Files.isDirectory(path)) result.putAll(createZipFile(applicationAbsoluteDir, nameFilter, newAbsoluteDir));
+            else {
+                try (FileInputStream fis = new FileInputStream(newAbsoluteDir)) {
+//                ZipEntry entry1 = new ZipEntry(fileInDir);
+                    byte[] buffer = new byte[fis.available()];
+                    fis.read(buffer);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    baos.write(buffer);
+                    String newFileInDir = newAbsoluteDir.substring(applicationAbsoluteDir.length(), newAbsoluteDir.length());
+                    result.put(newFileInDir, baos);
+                }
+            }
+        }
+        return result;
     }
 }

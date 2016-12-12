@@ -10,9 +10,9 @@
 <BODY><H3>Таблица: e-mail</H3>
 <HR>
 <a href="add">Добавить E-mail адрес</a><BR>
-<c:if test="${addForm != null}">
+<%--<c:if test="${addForm != null}">
     <jsp:include page="error.jsp"/>
-</c:if>
+</c:if>--%>
 <H4>Найдено записей: ${totalToShow} из ${total}</H4>
 
 <c:choose>
@@ -113,12 +113,12 @@
     </tbody>
 </table>
 
-<script>
+<%--<script>
     function openDialog() {
         document.getElementById("file1").click();
         window.location = 'send?id='+${email.getEmailId()};
     }
-</script>
+</script>--%>
 
 <BR>
 
@@ -168,7 +168,7 @@
 <HR>
 <BR><a href="main">На главную</a><BR>
 <c:if test="${requestScope['info'] != null}">
-    <BR>${info}<BR>
+    <BR><BR>${info}<BR>
 </c:if>
 <c:if test="${requestScope['errorMessage'] != null}">
     <BR>Ошибка: ${errorMessage}

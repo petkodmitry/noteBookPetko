@@ -2,13 +2,20 @@ package com.petko.controllers;
 
 import com.petko.entities.EmailsEntity;
 import com.petko.services.EmailService;
+import javafx.application.Application;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 
@@ -35,8 +42,10 @@ public class MainController {
 
         if (perPage != null) modelMap.addAttribute("perPage", perPage);
         if (page != null) modelMap.addAttribute("page", page);
-        if (sortBy != null) modelMap.addAttribute("sortBy", sortBy);
-        if (orderType != null) modelMap.addAttribute("orderType", orderType);
+//        if (sortBy != null) modelMap.addAttribute("sortBy", sortBy);
+//        if (orderType != null) modelMap.addAttribute("orderType", orderType);
+        if (sortBy != null) session.setAttribute("sortBy", sortBy);
+        if (orderType != null) session.setAttribute("orderType", orderType);
         if (filterRemove != null) modelMap.addAttribute("filterRemove", filterRemove);
 
         List<EmailsEntity> emailsList;
@@ -65,9 +74,25 @@ public class MainController {
         return main(modelMap, session, null, null, null, null, null, null, null);
     }
 
-    @RequestMapping(value = "/send", method = RequestMethod.GET)
+    /*@RequestMapping(value = "/send", method = RequestMethod.GET)
     public String sendToEmail(ModelMap modelMap, String id){
         emailService.getEmailOfReceiver(modelMap, id);
+        return "sendMessage";
+    }*/
+
+    @RequestMapping(value = "/send", method = RequestMethod.GET)
+    public String sendToEmail(ModelMap modelMap, String id, HttpServletRequest request){
+        String path = new File(".").getAbsolutePath();
+
+        emailService.sendMailNew(modelMap, id);
+        /*URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+        String classLocation = null;
+        try {
+            classLocation = URLDecoder.decode(location.getFile().substring(1).replace('/', File.separatorChar), Charset.defaultCharset().name());
+        } catch (UnsupportedEncodingException e) {*//*NOP*//*}
+
+
+        emailService.getEmailOfReceiver(modelMap, id);*/
         return "sendMessage";
     }
 
