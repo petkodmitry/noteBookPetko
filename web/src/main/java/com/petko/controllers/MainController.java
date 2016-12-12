@@ -2,20 +2,13 @@ package com.petko.controllers;
 
 import com.petko.entities.EmailsEntity;
 import com.petko.services.EmailService;
-import javafx.application.Application;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 
@@ -24,7 +17,7 @@ public class MainController {
     @Autowired
     private EmailService emailService;
 
-    @RequestMapping(value = "/main", method = {RequestMethod.POST, RequestMethod.GET})
+    @RequestMapping(value = {"/main", "/noteBookPetko", "/"}, method = {RequestMethod.POST, RequestMethod.GET})
     public String main(ModelMap modelMap, HttpSession session, String perPage,
                        @RequestParam(value = "page", required = false) String page,
                        @RequestParam(value = "sortBy", required = false) String sortBy,
@@ -74,32 +67,55 @@ public class MainController {
         return main(modelMap, session, null, null, null, null, null, null, null);
     }
 
-    /*@RequestMapping(value = "/send", method = RequestMethod.GET)
+    @RequestMapping(value = "/send", method = RequestMethod.GET)
     public String sendToEmail(ModelMap modelMap, String id){
         emailService.getEmailOfReceiver(modelMap, id);
         return "sendMessage";
-    }*/
-
-    @RequestMapping(value = "/send", method = RequestMethod.GET)
-    public String sendToEmail(ModelMap modelMap, String id, HttpServletRequest request){
-        String path = new File(".").getAbsolutePath();
-
-        emailService.sendMailNew(modelMap, id);
-        /*URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
-        String classLocation = null;
-        try {
-            classLocation = URLDecoder.decode(location.getFile().substring(1).replace('/', File.separatorChar), Charset.defaultCharset().name());
-        } catch (UnsupportedEncodingException e) {*//*NOP*//*}
-
-
-        emailService.getEmailOfReceiver(modelMap, id);*/
-        return "sendMessage";
     }
 
+    /*@RequestMapping(value = "/send", method = RequestMethod.GET)
+    public String sendToEmail2(ModelMap modelMap, String id){
+        String sendTo = emailService.getEmailOfReceiver(modelMap, id);
+        String subject = "\"Записная книжка\"";
+        String body = "Приветствую!\n\nВложения в данном письме были прикреплены приложением автоматически...";
+        String cvFileName = "PetkoCV.docx";
+        String zipFileName = "noteBook-Петько.zip";
+        String[] wildCards = {"tmp", ".classpath", ".project"*//*, ".idea"*//*, ".iml",
+                ".checkstyle", "build", "target", "bin", ".settings", ".git",
+                "out", "build", "target", ".xlsx", ".docx", ".zip"};
+        String applicationLocation = emailService.getAppDirectory(modelMap);
+        emailService.createZipFile(modelMap, applicationLocation, zipFileName, wildCards);
+
+        File cvFile = new File(applicationLocation + "\\" + cvFileName);
+        File zipFile = new File(applicationLocation + "\\" + zipFileName);
+        emailService.sendMail(modelMap, sendTo, subject, body,
+                cvFile, zipFile);
+
+//        return "sendMessage";
+        return "main";
+    }*/
+
     @RequestMapping(value = "/sendMessage", method = RequestMethod.POST)
-    public String sendMessage(ModelMap modelMap, HttpSession session, String sendTo, String subject, String body,
-                              @RequestParam(value = "upload", required = false) MultipartFile[] upload){
-        emailService.sendMail(modelMap, sendTo, subject, body, upload);
+    public String sendMessage(ModelMap modelMap, HttpSession session, String sendTo, String subject, String body
+                              /*, @RequestParam(value = "upload", required = false) MultipartFile[] upload*/){
+//        String subject = "\"Записная книжка\"";
+//        String body = "Приветствую!\n\nВложения в данном письме были прикреплены приложением автоматически...";
+        String cvFileName = "PetkoCV.docx";
+        String zipFileName = "noteBook-Петько.zip";
+        String[] wildCards = {"tmp", ".classpath", ".project", ".idea", ".iml",
+                ".checkstyle", "build", "target", "bin", ".settings", ".git",
+                "out", "build", "target", ".xlsx", ".docx", ".zip"};
+        String applicationLocation = emailService.getAppDirectory(modelMap);
+        emailService.createZipFile(modelMap, applicationLocation, zipFileName, wildCards);
+
+        File cvFile = new File(applicationLocation + "\\" + cvFileName);
+        if (!cvFile.exists()) cvFile = null;
+        File zipFile = new File(applicationLocation + "\\" + zipFileName);
+        if (!zipFile.exists()) zipFile = null;
+        emailService.sendMail(modelMap, sendTo, subject, body,
+                cvFile, zipFile);
+
+//        emailService.sendMail(modelMap, sendTo, subject, body, upload);
         return main(modelMap, session, null, null, null, null, null, null, null);
     }
 }

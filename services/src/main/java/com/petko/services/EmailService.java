@@ -11,7 +11,6 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -208,13 +207,18 @@ public class EmailService implements IEmailService {
      * @param idString - the ID of the contact, String version
      */
     @Override
-    @Transactional(readOnly = false, rollbackFor = {DaoException.class, NumberFormatException.class})
-    public void getEmailOfReceiver(ModelMap modelMap, String idString) {
+    @Transactional(readOnly = true, rollbackFor = {DaoException.class, NumberFormatException.class})
+    public void /*String*/ getEmailOfReceiver(ModelMap modelMap, String idString) {
+//        String result = "";
         try {
             int id = Integer.parseInt(idString);
             EmailsEntity entity = emailDao.getById(id);
             modelMap.put("email", entity.getEmail());
-        } catch (NumberFormatException | DaoException e) {/*NOP*/}
+//            result = entity.getEmail();
+        } catch (NumberFormatException e) {
+            modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать id.");
+        } catch (DaoException e) {/*NOP*/}
+//        return result;
     }
 
     /**
@@ -226,25 +230,28 @@ public class EmailService implements IEmailService {
      */
     @Override
     public void sendMail(ModelMap modelMap, String sendTo, String subject,
-                         String body, MultipartFile[] uploadedFiles) {
+                         String body, File... uploadedFiles) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
             helper.setTo(sendTo);
             helper.setSubject(subject);
             helper.setText(body);
-            for (MultipartFile file : uploadedFiles) {
+            /*for (MultipartFile file : uploadedFiles) {
                 File tempFile = Files.createTempFile(null, null).toFile();
                 FileOutputStream fos = new FileOutputStream(tempFile);
                 fos.write(file.getBytes());
                 fos.close();
                 String fileName = file.getOriginalFilename();
                 helper.addAttachment(fileName, tempFile);
+            }*/
+            for (File file : uploadedFiles) {
+                if (file != null) helper.addAttachment(file.getName(), file);
             }
             mailSender.send(message);
-            modelMap.addAttribute(infoMessageAttribute, "Письмо успешно отправлено на почту " + sendTo + " .");
-        } catch (IOException e) {
-            modelMap.addAttribute(errorMessageAttribute, "Ошибка работы с файлом вложения.");
+            modelMap.addAttribute(infoMessageAttribute, "Письмо успешно отправлено на почту " + sendTo + "!");
+//        } catch (IOException e) {
+//            modelMap.addAttribute(errorMessageAttribute, "Ошибка работы с файлом вложения.");
         } catch (MessagingException e) {
             modelMap.addAttribute(errorMessageAttribute, "Ошибка работы с объектом сообщения.");
         } catch (NumberFormatException e) {
@@ -252,27 +259,40 @@ public class EmailService implements IEmailService {
         }
     }
 
-    //    @Override
+    public String getAppDirectory(ModelMap modelMap) {
+        String applicationLocation = "";
+        try {
+            URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+            String currentRelativeDir = "web\\target\\";
+            applicationLocation = URLDecoder.decode(location.getFile().substring(1).replace('/', File.separatorChar), Charset.defaultCharset().name());
+            applicationLocation = applicationLocation.substring(0, applicationLocation.indexOf(currentRelativeDir));
+        } catch (UnsupportedEncodingException e) {
+            modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать директорию с проектом.");
+        }
+        return applicationLocation;
+    }
+
     @Transactional(readOnly = true, rollbackFor = {IOException.class})
-    public void sendMailNew(ModelMap modelMap, String idString) {
-        URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+    public void createZipFile(ModelMap modelMap, String applicationLocation, String zipFileName, String[] wildCards) {
+//        URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
         try {
             // getting Entity to send to
-            int id = Integer.parseInt(idString);
-            EmailsEntity entity = emailDao.getById(id);
-            modelMap.put("email", entity.getEmail());
+//            int id = Integer.parseInt(idString);
+//            EmailsEntity entity = emailDao.getById(id);
+//            modelMap.put("email", entity.getEmail());
 
             // getting the directory of our App
-            String currentRelativeDir = "web\\target\\";
-            String applicationLocation = URLDecoder.decode(location.getFile().substring(1).replace('/', File.separatorChar), Charset.defaultCharset().name());
-            applicationLocation = applicationLocation.substring(0, applicationLocation.indexOf(currentRelativeDir));
+//            String currentRelativeDir = "web\\target\\";
+//            String applicationLocation = URLDecoder.decode(location.getFile().substring(1).replace('/', File.separatorChar), Charset.defaultCharset().name());
+//            applicationLocation = applicationLocation.substring(0, applicationLocation.indexOf(currentRelativeDir));
 
             // creating resulting ZIP file
-            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(applicationLocation + "noteBook-Петько.zip"))) {
+            try (ZipOutputStream zout = new ZipOutputStream(
+                    new FileOutputStream(applicationLocation + zipFileName))) {
                 // filter for file which are NOT of following endings
-                String[] wildCards = {"tmp", ".classpath", ".project"/*, ".idea"*/, ".iml",
-                        ".checkstyle", "build", "target", "bin", ".settings", ".git",
-                        "out", "build", "target", ".xlsx", ".docx", ".zip"};
+//                String[] wildCards = {"tmp", ".classpath", ".project"/*, ".idea"*/, ".iml",
+//                        ".checkstyle", "build", "target", "bin", ".settings", ".git",
+//                        "out", "build", "target", ".xlsx", ".docx", ".zip"};
                 FilenameFilter nameFilter = new FilenameFilter() {
                     @Override
                     public boolean accept(File dir, String name) {
@@ -280,23 +300,8 @@ public class EmailService implements IEmailService {
                             if (name.toLowerCase().endsWith(filters)) return false;
                         }
                         return true;
-//                        return !dir.getName().toLowerCase().endsWith(name);
                     }
                 };
-
-//                File parentDir = new File(applicationAbsoluteDir);
-                String relativeDir = "";
-//                String[] fileList = parentDir.list(nameFilter);
-                /*for (String fileInDir : fileList) {
-                    try (FileInputStream fis = new FileInputStream(fileInDir)) {
-                        ZipEntry entry1 = new ZipEntry(fileInDir);
-                        zout.putNextEntry(entry1);
-                        byte[] buffer = new byte[fis.available()];
-                        fis.read(buffer);
-                        zout.write(buffer);
-                        zout.closeEntry();
-                    }
-                }*/
                 Map<String, ByteArrayOutputStream> allFilesByFilter =
                         createZipFile(applicationLocation, nameFilter, applicationLocation);
 //                Map<String, ByteArrayOutputStream> allFilesByFilter = createZipFile(parentDir, fileList, currentAbsoluteDir);
@@ -311,8 +316,8 @@ public class EmailService implements IEmailService {
             }
         } catch (NumberFormatException e) {
             modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать id контакта.");
-        } catch (UnsupportedEncodingException e) {
-            modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать директорию с проектом.");
+//        } catch (UnsupportedEncodingException e) {
+//            modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать директорию с проектом.");
         } catch (DaoException e) {/*NOP*/}
         catch (IOException e) {
             modelMap.addAttribute(errorMessageAttribute, "Ошибка в чтении файла(ов).");
