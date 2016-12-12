@@ -14,7 +14,7 @@ public interface IEmailService {
 
     void deleteEmail(ModelMap modelMap, String idString);
 
-    void /*String*/ getEmailOfReceiver(ModelMap modelMap, String idString);
+    void getEmailOfReceiver(ModelMap modelMap, String idString);
 
     void sendMail(ModelMap modelMap, String idString, String subject,
                   String body, File... uploadedFiles);

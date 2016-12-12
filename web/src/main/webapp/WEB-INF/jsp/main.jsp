@@ -10,9 +10,6 @@
 <BODY><H3>Таблица: e-mail</H3>
 <HR>
 <a href="add">Добавить E-mail адрес</a><BR>
-<%--<c:if test="${addForm != null}">
-    <jsp:include page="error.jsp"/>
-</c:if>--%>
 <H4>Найдено записей: ${totalToShow} из ${total}</H4>
 
 <c:choose>
@@ -112,13 +109,6 @@
     </c:forEach>
     </tbody>
 </table>
-
-<%--<script>
-    function openDialog() {
-        document.getElementById("file1").click();
-        window.location = 'send?id='+${email.getEmailId()};
-    }
-</script>--%>
 
 <BR>
 

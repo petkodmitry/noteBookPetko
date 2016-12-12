@@ -11,7 +11,6 @@
 <body><H3>Форма для отправки сообщения:</H3>
 <HR>
 
-<%--<form method="post" enctype="multipart/form-data">--%>
 <form method="post">
     <input id="sendTo" name="sendTo" title="sendTo" type="text" value="${email}" readonly/>
     <BR>
@@ -19,8 +18,6 @@
     <BR>
     <textarea id="body" name="body" title="body" maxlength="500" rows="15" cols="100"></textarea>
     <BR>
-    <%--<div style="font-style: oblique; color: blue">Внимание! При отправке в письмо будут автоматически вложены файлы: zip-архив с исходниками пректа и "PetkoCV.docx"!</div>--%>
-    <%--<div style="color: navy">P.S. Файл "PetkoCV.docx" должен находится в корневой папке запущенного проекта. Иначе он отправлен не будет</div>--%>
     <div style="color: navy">Внимание! При отправке в письмо будут автоматически вложены файлы: zip-архив с исходниками пректа и "PetkoCV.docx"!</div>
     <div style="font-style: oblique; color: navy">P.S. Файл "PetkoCV.docx" должен находится в корневой папке запущенного проекта. Иначе он отправлен не будет</div>
     <BR><BR>

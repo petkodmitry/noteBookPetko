@@ -35,8 +35,6 @@ public class MainController {
 
         if (perPage != null) modelMap.addAttribute("perPage", perPage);
         if (page != null) modelMap.addAttribute("page", page);
-//        if (sortBy != null) modelMap.addAttribute("sortBy", sortBy);
-//        if (orderType != null) modelMap.addAttribute("orderType", orderType);
         if (sortBy != null) session.setAttribute("sortBy", sortBy);
         if (orderType != null) session.setAttribute("orderType", orderType);
         if (filterRemove != null) modelMap.addAttribute("filterRemove", filterRemove);
@@ -73,49 +71,23 @@ public class MainController {
         return "sendMessage";
     }
 
-    /*@RequestMapping(value = "/send", method = RequestMethod.GET)
-    public String sendToEmail2(ModelMap modelMap, String id){
-        String sendTo = emailService.getEmailOfReceiver(modelMap, id);
-        String subject = "\"Записная книжка\"";
-        String body = "Приветствую!\n\nВложения в данном письме были прикреплены приложением автоматически...";
-        String cvFileName = "PetkoCV.docx";
-        String zipFileName = "noteBook-Петько.zip";
-        String[] wildCards = {"tmp", ".classpath", ".project"*//*, ".idea"*//*, ".iml",
-                ".checkstyle", "build", "target", "bin", ".settings", ".git",
-                "out", "build", "target", ".xlsx", ".docx", ".zip"};
-        String applicationLocation = emailService.getAppDirectory(modelMap);
-        emailService.createZipFile(modelMap, applicationLocation, zipFileName, wildCards);
-
-        File cvFile = new File(applicationLocation + "\\" + cvFileName);
-        File zipFile = new File(applicationLocation + "\\" + zipFileName);
-        emailService.sendMail(modelMap, sendTo, subject, body,
-                cvFile, zipFile);
-
-//        return "sendMessage";
-        return "main";
-    }*/
-
     @RequestMapping(value = "/sendMessage", method = RequestMethod.POST)
-    public String sendMessage(ModelMap modelMap, HttpSession session, String sendTo, String subject, String body
-                              /*, @RequestParam(value = "upload", required = false) MultipartFile[] upload*/){
-//        String subject = "\"Записная книжка\"";
-//        String body = "Приветствую!\n\nВложения в данном письме были прикреплены приложением автоматически...";
+    public String sendMessage(ModelMap modelMap, HttpSession session, String sendTo, String subject, String body){
         String cvFileName = "PetkoCV.docx";
         String zipFileName = "noteBook-Петько.zip";
         String[] wildCards = {"tmp", ".classpath", ".project", ".idea", ".iml",
                 ".checkstyle", "build", "target", "bin", ".settings", ".git",
                 "out", "build", "target", ".xlsx", ".docx", ".zip"};
         String applicationLocation = emailService.getAppDirectory(modelMap);
-        emailService.createZipFile(modelMap, applicationLocation, zipFileName, wildCards);
 
-        File cvFile = new File(applicationLocation + "\\" + cvFileName);
+        emailService.createZipFile(modelMap, applicationLocation, zipFileName, wildCards);
+        File cvFile = new File(applicationLocation + cvFileName);
         if (!cvFile.exists()) cvFile = null;
-        File zipFile = new File(applicationLocation + "\\" + zipFileName);
+        File zipFile = new File(applicationLocation + zipFileName);
         if (!zipFile.exists()) zipFile = null;
         emailService.sendMail(modelMap, sendTo, subject, body,
                 cvFile, zipFile);
 
-//        emailService.sendMail(modelMap, sendTo, subject, body, upload);
         return main(modelMap, session, null, null, null, null, null, null, null);
     }
 }

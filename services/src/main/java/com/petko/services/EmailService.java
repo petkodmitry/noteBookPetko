@@ -53,8 +53,6 @@ public class EmailService implements IEmailService {
         String page = (String) modelMap.get("page");
 
         // for sorting
-//        String sortBy = (String) modelMap.get("sortBy");
-//        String orderType = (String) modelMap.get("orderType");
         String sortBy = (String) session.getAttribute("sortBy");
         String orderType = (String) session.getAttribute("orderType");
         // for filtering
@@ -80,8 +78,6 @@ public class EmailService implements IEmailService {
                 if (sortBy != null && orderType != null) {
                     session.setAttribute("sortBy", sortBy);
                     session.setAttribute("orderType", orderType);
-//                    modelMap.addAttribute("sortBy", sortBy);
-//                    modelMap.addAttribute("orderType", orderType);
                 }
                 firstInt = (newPageInt - 1) * newMax;
             }
@@ -208,17 +204,14 @@ public class EmailService implements IEmailService {
      */
     @Override
     @Transactional(readOnly = true, rollbackFor = {DaoException.class, NumberFormatException.class})
-    public void /*String*/ getEmailOfReceiver(ModelMap modelMap, String idString) {
-//        String result = "";
+    public void getEmailOfReceiver(ModelMap modelMap, String idString) {
         try {
             int id = Integer.parseInt(idString);
             EmailsEntity entity = emailDao.getById(id);
             modelMap.put("email", entity.getEmail());
-//            result = entity.getEmail();
         } catch (NumberFormatException e) {
             modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать id.");
         } catch (DaoException e) {/*NOP*/}
-//        return result;
     }
 
     /**
@@ -237,21 +230,11 @@ public class EmailService implements IEmailService {
             helper.setTo(sendTo);
             helper.setSubject(subject);
             helper.setText(body);
-            /*for (MultipartFile file : uploadedFiles) {
-                File tempFile = Files.createTempFile(null, null).toFile();
-                FileOutputStream fos = new FileOutputStream(tempFile);
-                fos.write(file.getBytes());
-                fos.close();
-                String fileName = file.getOriginalFilename();
-                helper.addAttachment(fileName, tempFile);
-            }*/
             for (File file : uploadedFiles) {
                 if (file != null) helper.addAttachment(file.getName(), file);
             }
             mailSender.send(message);
             modelMap.addAttribute(infoMessageAttribute, "Письмо успешно отправлено на почту " + sendTo + "!");
-//        } catch (IOException e) {
-//            modelMap.addAttribute(errorMessageAttribute, "Ошибка работы с файлом вложения.");
         } catch (MessagingException e) {
             modelMap.addAttribute(errorMessageAttribute, "Ошибка работы с объектом сообщения.");
         } catch (NumberFormatException e) {
@@ -274,59 +257,36 @@ public class EmailService implements IEmailService {
 
     @Transactional(readOnly = true, rollbackFor = {IOException.class})
     public void createZipFile(ModelMap modelMap, String applicationLocation, String zipFileName, String[] wildCards) {
-//        URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
-        try {
-            // getting Entity to send to
-//            int id = Integer.parseInt(idString);
-//            EmailsEntity entity = emailDao.getById(id);
-//            modelMap.put("email", entity.getEmail());
-
-            // getting the directory of our App
-//            String currentRelativeDir = "web\\target\\";
-//            String applicationLocation = URLDecoder.decode(location.getFile().substring(1).replace('/', File.separatorChar), Charset.defaultCharset().name());
-//            applicationLocation = applicationLocation.substring(0, applicationLocation.indexOf(currentRelativeDir));
-
-            // creating resulting ZIP file
-            try (ZipOutputStream zout = new ZipOutputStream(
-                    new FileOutputStream(applicationLocation + zipFileName))) {
-                // filter for file which are NOT of following endings
-//                String[] wildCards = {"tmp", ".classpath", ".project"/*, ".idea"*/, ".iml",
-//                        ".checkstyle", "build", "target", "bin", ".settings", ".git",
-//                        "out", "build", "target", ".xlsx", ".docx", ".zip"};
-                FilenameFilter nameFilter = new FilenameFilter() {
-                    @Override
-                    public boolean accept(File dir, String name) {
-                        for (String filters : wildCards) {
-                            if (name.toLowerCase().endsWith(filters)) return false;
-                        }
-                        return true;
+        try (ZipOutputStream zout = new ZipOutputStream(
+                new FileOutputStream(applicationLocation + zipFileName))) {
+            // filter for file which are NOT of endings referred in wildCards
+            FilenameFilter nameFilter = new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    for (String filters : wildCards) {
+                        if (name.toLowerCase().endsWith(filters)) return false;
                     }
-                };
-                Map<String, ByteArrayOutputStream> allFilesByFilter =
-                        createZipFile(applicationLocation, nameFilter, applicationLocation);
-//                Map<String, ByteArrayOutputStream> allFilesByFilter = createZipFile(parentDir, fileList, currentAbsoluteDir);
-                for (Map.Entry<String, ByteArrayOutputStream> entry : allFilesByFilter.entrySet()) {
-                    zout.putNextEntry(new ZipEntry(entry.getKey()));
-                    ByteArrayOutputStream value = entry.getValue();
-                    if (value != null) {
-                        zout.write(value.toByteArray());
-                    }
-                    zout.closeEntry();
+                    return true;
                 }
+            };
+            Map<String, ByteArrayOutputStream> allFilesByFilter =
+                    createZipFile(applicationLocation, nameFilter, applicationLocation);
+            for (Map.Entry<String, ByteArrayOutputStream> entry : allFilesByFilter.entrySet()) {
+                zout.putNextEntry(new ZipEntry(entry.getKey()));
+                ByteArrayOutputStream value = entry.getValue();
+                if (value != null) {
+                    zout.write(value.toByteArray());
+                }
+                zout.closeEntry();
             }
-        } catch (NumberFormatException e) {
-            modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать id контакта.");
-//        } catch (UnsupportedEncodingException e) {
-//            modelMap.addAttribute(errorMessageAttribute, "Невозможно распознать директорию с проектом.");
-        } catch (DaoException e) {/*NOP*/}
-        catch (IOException e) {
+        } catch (IOException e) {
             modelMap.addAttribute(errorMessageAttribute, "Ошибка в чтении файла(ов).");
         }
     }
 
     private Map<String, ByteArrayOutputStream> createZipFile(String applicationAbsoluteDir,
                                                              FilenameFilter nameFilter,
-                                                             String currentAbsoluteDir) throws IOException{
+                                                             String currentAbsoluteDir) throws IOException {
         Map<String, ByteArrayOutputStream> result = new HashMap<>();
 
         File parentDir = new File(currentAbsoluteDir);
@@ -334,15 +294,12 @@ public class EmailService implements IEmailService {
         String[] fileList = parentDir.list(nameFilter);
 
         for (String fileInDir : fileList) {
-//            fileInDir = currentAbsoluteDir + "\\" + fileInDir;
-//            Path path = Paths.get(fileInDir);
             String newAbsoluteDir = currentAbsoluteDir + "\\" + fileInDir;
             Path path = Paths.get(newAbsoluteDir);
-//            if (Files.isDirectory(path)) result.put(fileInDir, null);
-            if (Files.isDirectory(path)) result.putAll(createZipFile(applicationAbsoluteDir, nameFilter, newAbsoluteDir));
+            if (Files.isDirectory(path))
+                result.putAll(createZipFile(applicationAbsoluteDir, nameFilter, newAbsoluteDir));
             else {
                 try (FileInputStream fis = new FileInputStream(newAbsoluteDir)) {
-//                ZipEntry entry1 = new ZipEntry(fileInDir);
                     byte[] buffer = new byte[fis.available()];
                     fis.read(buffer);
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
